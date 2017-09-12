@@ -10,8 +10,7 @@ class FCM
 
   # constants
   GROUP_NOTIFICATION_BASE_URI = 'https://android.googleapis.com/gcm'
-  SERVER_IID_BASE_URI = 'https://iid.googleapis.com/iid'
-  FCM_BASE_URI = 'https://fcm.googleapis.com/fcm'
+  SERVER_INSTANCE_IID_URI = 'https://iid.googleapis.com/iid'
 
   attr_accessor :timeout, :api_key
 
@@ -42,11 +41,7 @@ class FCM
         'Content-Type' => 'application/json'
       }
     }
-
-    for_uri(FCM_BASE_URI) do
-      response = self.class.post('/send', params.merge(@client_options))
-    end
-
+    response = self.class.post('/send', params.merge(@client_options))
     build_response(response, registration_ids)
   end
   alias send send_notification
@@ -62,12 +57,7 @@ class FCM
       }
     }
 
-    response = nil
-
-    for_uri(SERVER_IID_BASE_URI) do
-      response = self.class.post('/v1:batchAdd', params.merge(@client_options))
-    end
-
+    response = self.class.post('https://iid.googleapis.com/iid/v1:batchAdd', params.merge(@client_options))
     build_iid_response(response)
   end
 
@@ -82,12 +72,7 @@ class FCM
       }
     }
 
-    response = nil
-
-    for_uri(SERVER_IID_BASE_URI) do
-      response = self.class.post('/v1:batchRemove', params.merge(@client_options))
-    end
-
+    response = self.class.post('https://iid.googleapis.com/iid/v1:batchRemove', params.merge(@client_options))
     build_iid_response(response)
   end
 
@@ -98,12 +83,7 @@ class FCM
       }
     }
 
-    response = nil
-
-    for_uri(SERVER_IID_BASE_URI) do
-      response = self.class.get("/info/#{registration_id}?details=true", params.merge(@client_options))
-    end
-
+    response = self.class.get("https://iid.googleapis.com/iid/info/#{registration_id}?details=true", params.merge(@client_options))
     build_iid_response(response)
   end
 
@@ -207,10 +187,7 @@ class FCM
       }
     }
 
-    for_uri(FCM_BASE_URI) do
-      response = self.class.post('/send', params.merge(@client_options))
-    end
-
+    response = self.class.post('/send', params.merge(@client_options))
     build_response(response)
   end
 
@@ -223,10 +200,10 @@ class FCM
   private
 
   def for_uri(uri)
-    # current_uri = self.class.base_uri
+    current_uri = self.class.base_uri
     self.class.base_uri uri
-    # yield
-    # self.class.base_uri current_uri
+    yield
+    self.class.base_uri current_uri
   end
 
   def build_post_body(registration_ids, options = {})
