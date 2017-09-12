@@ -10,6 +10,7 @@ class FCM
 
   # constants
   GROUP_NOTIFICATION_BASE_URI = 'https://android.googleapis.com/gcm'
+  SERVER_INSTANCE_IID_URI = 'https://iid.googleapis.com/iid'
 
   attr_accessor :timeout, :api_key
 
@@ -44,6 +45,62 @@ class FCM
     build_response(response, registration_ids)
   end
   alias send send_notification
+
+  def add_subscribers_to_topic(registration_ids, topic_name)
+    post_body = build_post_iid_body(registration_ids, to: topic_name)
+
+    params = {
+      body: post_body.to_json,
+      headers: {
+        'Content-Type' => 'application/json',
+        'Authorization' => "key=#{@api_key}"
+      }
+    }
+
+    response = nil
+
+    for_uri(SERVER_INSTANCE_IID_URI) do
+      response = self.class.post('/v1:batchAdd', params.merge(@client_options))
+    end
+
+    build_iid_response(response)
+  end
+
+  def remove_subscribers_from_topic(registration_ids, topic_name)
+    post_body = build_post_iid_body(registration_ids, to: topic_name)
+
+    params = {
+      body: post_body.to_json,
+      headers: {
+        'Content-Type' => 'application/json',
+        'Authorization' => "key=#{@api_key}"
+      }
+    }
+
+    response = nil
+
+    for_uri(SERVER_INSTANCE_IID_URI) do
+      response = self.class.post('/v1:batchRemove', params.merge(@client_options))
+    end
+
+    build_iid_response(response)
+  end
+
+  def get_subscriber_information(registration_id)
+    params = {
+      headers: {
+        'Authorization' => "key=#{@api_key}"
+      }
+    }
+
+    response = nil
+
+    for_uri(SERVER_INSTANCE_IID_URI) do
+      response = self.class.post("/info/#{registration_id}?details=true", params.merge(@client_options))
+    end
+
+    build_iid_response(response)
+  end
 
   def create_notification_key(key_name, project_id, registration_ids = [])
     post_body = build_post_body(registration_ids, operation: 'create',
@@ -167,6 +224,28 @@ class FCM
   def build_post_body(registration_ids, options = {})
     ids = registration_ids.is_a?(String) ? [registration_ids] : registration_ids
     { registration_ids: ids }.merge(options)
+  end
+
+  def build_post_iid_body(registration_ids, options = {})
+    ids = registration_ids.is_a?(String) ? [registration_ids] : registration_ids
+    { registration_tokens: ids }.merge(options)
+  end
+
+  # iid response error on add/remove subscribers
+  # NOT_FOUND — The registration token has been deleted or the app has been uninstalled.
+  # INVALID_ARGUMENT — The registration token provided is not valid for the Sender ID.
+  # INTERNAL — The backend server failed for unknown reasons. Retry the request.
+  # TOO_MANY_TOPICS — Excessive number of topics per app instance.
+  def build_iid_response(response)
+    body = response.body || {}
+    response_hash = { body: body, headers: response.headers, status_code: response.code }
+    case response.code
+    when 200
+      response_hash[:response] = 'success'
+    else
+      response_hash[:response] = 'IID request error'
+    end
+    response_hash
   end
 
   def build_response(response, registration_ids = [])
