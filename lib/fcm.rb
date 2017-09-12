@@ -47,7 +47,8 @@ class FCM
   alias send send_notification
 
   def add_subscribers_to_topic(registration_ids, topic_name)
-    post_body = build_post_iid_body(registration_ids, to: topic_name)
+    formatted_topic_name = format_topic_name(topic_name)
+    post_body = build_post_iid_body(registration_ids, to: formatted_topic_name)
 
     params = {
       body: post_body.to_json,
@@ -62,7 +63,8 @@ class FCM
   end
 
   def remove_subscribers_from_topic(registration_ids, topic_name)
-    post_body = build_post_iid_body(registration_ids, to: topic_name)
+    formatted_topic_name = format_topic_name(topic_name)
+    post_body = build_post_iid_body(registration_ids, to: formatted_topic_name)
 
     params = {
       body: post_body.to_json,
@@ -193,7 +195,8 @@ class FCM
 
   def send_to_topic(topic, options = {})
     if topic =~ /[a-zA-Z0-9\-_.~%]+/
-      send_with_notification_key('/topics/' + topic, options)
+      topic_name = format_topic_name(topic)
+      send_with_notification_key(topic_name, options)
     end
   end
 
@@ -204,6 +207,10 @@ class FCM
     self.class.base_uri uri
     yield
     self.class.base_uri current_uri
+  end
+
+  def format_topic_name topic
+    '/topics/' + topic
   end
 
   def build_post_body(registration_ids, options = {})
