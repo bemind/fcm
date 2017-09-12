@@ -4,15 +4,14 @@ require 'json'
 
 class FCM
   include HTTParty
-  
+  base_uri 'https://fcm.googleapis.com/fcm'
+  default_timeout 30
+  format :json
+
   # constants
   GROUP_NOTIFICATION_BASE_URI = 'https://android.googleapis.com/gcm'
   SERVER_IID_BASE_URI = 'https://iid.googleapis.com/iid'
   FCM_BASE_URI = 'https://fcm.googleapis.com/fcm'
-
-  base_uri FCM_BASE_URI
-  default_timeout 30
-  format :json
 
   attr_accessor :timeout, :api_key
 
